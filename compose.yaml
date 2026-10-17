@@ -1,0 +1,202 @@
+name: ${COMPOSE_PROJECT_NAME:-hefesto-eventos}
+services:
+  preflight:
+    image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+    restart: 'no'
+    entrypoint:
+    - sh
+    - /opt/hefesto/preflight.sh
+    environment:
+      PGHOST: ${DB_HOST:?Configurar DB_HOST}
+      PGPORT: '5432'
+      PGDATABASE: postgres
+      PGUSER: ${DB_USER:-pretix_app}
+      PGPASSWORD: ${DB_PASSWORD:?Configurar clave DB}
+      PGSSLMODE: verify-full
+      PGSSLROOTCERT: /certs/ca.crt
+      PGCONNECT_TIMEOUT: '15'
+      SUPABASE_DEDICATED_CONFIRMED: ${SUPABASE_DEDICATED_CONFIRMED:-false}
+      SUPABASE_DATA_API_DISABLED: ${SUPABASE_DATA_API_DISABLED:-false}
+    volumes:
+    - ./ops:/opt/hefesto:ro
+    - ./certs:/certs:ro
+  permissions:
+    image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+    restart: 'no'
+    user: '0'
+    entrypoint:
+    - sh
+    - -ec
+    - chown -R 15371:15371 /files; chmod 755 /files
+    volumes:
+    - files:/files
+  redis:
+    image: redis:7.4-alpine@sha256:858f009f9709ce576febc734aa78b8f6d624b82571f9ddb6bda4377c833b3499
+    restart: unless-stopped
+    command:
+    - redis-server
+    - --appendonly
+    - 'yes'
+    - --maxmemory-policy
+    - noeviction
+    networks:
+    - backend
+    volumes:
+    - redis_data:/data
+    healthcheck:
+      test:
+      - CMD
+      - redis-cli
+      - ping
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  migrate:
+    image: pretix/standalone:2026.8.0@sha256:ec17c2f761f7ad51e6dfc71d5036ea3241f8abf867cc66e015093b24c03c77de
+    restart: 'no'
+    command:
+    - migrate
+    - --noinput
+    environment:
+      AUTOMIGRATE: skip
+      NUM_WORKERS: '2'
+      PRETIX_PRETIX_URL: ${PUBLIC_URL:?Configurar URL HTTPS}
+      PRETIX_DJANGO_SECRET: ${DJANGO_SECRET:?Configurar secreto}
+      PRETIX_DATABASE_HOST: ${DB_HOST}
+      PRETIX_DATABASE_USER: ${DB_USER:-pretix_app}
+      PRETIX_DATABASE_PASSWORD: ${DB_PASSWORD}
+      PRETIX_MAIL_FROM: ${MAIL_FROM:-eventos@hefesto-studio.cl}
+      PRETIX_MAIL_HOST: ${SMTP_HOST:-REEMPLAZAR}
+      PRETIX_MAIL_USER: ${SMTP_USER:-REEMPLAZAR}
+      PRETIX_MAIL_PASSWORD: ${SMTP_PASSWORD:-REEMPLAZAR}
+      PRETIX_MAIL_PORT: '465'
+      PRETIX_MAIL_SSL: 'on'
+      PRETIX_MAIL_TLS: 'off'
+      BOOTSTRAP_MODE: 'false'
+      SMTP_READY: ${SMTP_READY:-false}
+      TZ: America/Santiago
+    volumes:
+    - files:/data
+    - ./ops:/opt/hefesto:ro
+    - ./ops/pretix.cfg:/etc/pretix/pretix.cfg:ro
+    - ./certs:/certs:ro
+    networks:
+    - default
+    - backend
+    depends_on:
+      preflight:
+        condition: service_completed_successfully
+      permissions:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+  app:
+    image: pretix/standalone:2026.8.0@sha256:ec17c2f761f7ad51e6dfc71d5036ea3241f8abf867cc66e015093b24c03c77de
+    restart: unless-stopped
+    stop_grace_period: 120s
+    entrypoint:
+    - sh
+    - /opt/hefesto/start.sh
+    command:
+    - all
+    environment:
+      AUTOMIGRATE: skip
+      NUM_WORKERS: '2'
+      PRETIX_PRETIX_URL: ${PUBLIC_URL:?Configurar URL HTTPS}
+      PRETIX_DJANGO_SECRET: ${DJANGO_SECRET:?Configurar secreto}
+      PRETIX_DATABASE_HOST: ${DB_HOST}
+      PRETIX_DATABASE_USER: ${DB_USER:-pretix_app}
+      PRETIX_DATABASE_PASSWORD: ${DB_PASSWORD}
+      PRETIX_MAIL_FROM: ${MAIL_FROM:-eventos@hefesto-studio.cl}
+      PRETIX_MAIL_HOST: ${SMTP_HOST:-REEMPLAZAR}
+      PRETIX_MAIL_USER: ${SMTP_USER:-REEMPLAZAR}
+      PRETIX_MAIL_PASSWORD: ${SMTP_PASSWORD:-REEMPLAZAR}
+      PRETIX_MAIL_PORT: '465'
+      PRETIX_MAIL_SSL: 'on'
+      PRETIX_MAIL_TLS: 'off'
+      BOOTSTRAP_MODE: 'false'
+      SMTP_READY: ${SMTP_READY:-false}
+      TZ: America/Santiago
+    volumes:
+    - files:/data
+    - ./ops:/opt/hefesto:ro
+    - ./ops/pretix.cfg:/etc/pretix/pretix.cfg:ro
+    - ./certs:/certs:ro
+    - ./ops/pretixtask.conf:/etc/supervisord/pretixtask.conf:ro
+    networks:
+    - default
+    - backend
+    expose:
+    - '80'
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+  periodic:
+    image: pretix/standalone:2026.8.0@sha256:ec17c2f761f7ad51e6dfc71d5036ea3241f8abf867cc66e015093b24c03c77de
+    restart: unless-stopped
+    stop_grace_period: 120s
+    entrypoint:
+    - sh
+    - /opt/hefesto/periodic.sh
+    environment:
+      AUTOMIGRATE: skip
+      NUM_WORKERS: '2'
+      PRETIX_PRETIX_URL: ${PUBLIC_URL:?Configurar URL HTTPS}
+      PRETIX_DJANGO_SECRET: ${DJANGO_SECRET:?Configurar secreto}
+      PRETIX_DATABASE_HOST: ${DB_HOST}
+      PRETIX_DATABASE_USER: ${DB_USER:-pretix_app}
+      PRETIX_DATABASE_PASSWORD: ${DB_PASSWORD}
+      PRETIX_MAIL_FROM: ${MAIL_FROM:-eventos@hefesto-studio.cl}
+      PRETIX_MAIL_HOST: ${SMTP_HOST:-REEMPLAZAR}
+      PRETIX_MAIL_USER: ${SMTP_USER:-REEMPLAZAR}
+      PRETIX_MAIL_PASSWORD: ${SMTP_PASSWORD:-REEMPLAZAR}
+      PRETIX_MAIL_PORT: '465'
+      PRETIX_MAIL_SSL: 'on'
+      PRETIX_MAIL_TLS: 'off'
+      BOOTSTRAP_MODE: 'false'
+      SMTP_READY: ${SMTP_READY:-false}
+      TZ: America/Santiago
+    volumes:
+    - files:/data
+    - ./ops:/opt/hefesto:ro
+    - ./ops/pretix.cfg:/etc/pretix/pretix.cfg:ro
+    - ./certs:/certs:ro
+    networks:
+    - default
+    - backend
+    depends_on:
+      app:
+        condition: service_started
+  dbtools:
+    image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+    profiles:
+    - tools
+    environment:
+      PGHOST: ${DB_HOST:?Configurar DB_HOST}
+      PGPORT: '5432'
+      PGDATABASE: postgres
+      PGUSER: ${DB_USER:-pretix_app}
+      PGPASSWORD: ${DB_PASSWORD:?Configurar clave DB}
+      PGSSLMODE: verify-full
+      PGSSLROOTCERT: /certs/ca.crt
+      PGCONNECT_TIMEOUT: '15'
+    volumes:
+    - ./certs:/certs:ro
+    - ./ops:/opt/hefesto:ro
+  filetools:
+    image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
+    profiles:
+    - tools
+    user: '0'
+    network_mode: none
+    volumes:
+    - files:/files
+    - redis_data:/redis-data
+volumes:
+  files: {}
+  redis_data: {}
+networks:
+  backend:
+    internal: true

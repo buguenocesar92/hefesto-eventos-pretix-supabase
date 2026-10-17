@@ -1,0 +1,44 @@
+services:
+  app:
+    environment:
+      PRETIX_PRETIX_URL: http://localhost:8114
+      PRETIX_MAIL_FROM: eventos@example.invalid
+      PRETIX_MAIL_HOST: mailpit
+      PRETIX_MAIL_USER: ''
+      PRETIX_MAIL_PASSWORD: ''
+      PRETIX_MAIL_PORT: '1025'
+      PRETIX_MAIL_SSL: 'off'
+      PRETIX_MAIL_TLS: 'off'
+      BOOTSTRAP_MODE: 'true'
+    ports:
+    - 127.0.0.1:8114:80
+    depends_on:
+      mailpit:
+        condition: service_started
+  migrate:
+    environment:
+      PRETIX_PRETIX_URL: http://localhost:8114
+      PRETIX_MAIL_FROM: eventos@example.invalid
+      PRETIX_MAIL_HOST: mailpit
+      PRETIX_MAIL_USER: ''
+      PRETIX_MAIL_PASSWORD: ''
+      PRETIX_MAIL_PORT: '1025'
+      PRETIX_MAIL_SSL: 'off'
+      PRETIX_MAIL_TLS: 'off'
+      BOOTSTRAP_MODE: 'true'
+  periodic:
+    environment:
+      PRETIX_PRETIX_URL: http://localhost:8114
+      PRETIX_MAIL_FROM: eventos@example.invalid
+      PRETIX_MAIL_HOST: mailpit
+      PRETIX_MAIL_USER: ''
+      PRETIX_MAIL_PASSWORD: ''
+      PRETIX_MAIL_PORT: '1025'
+      PRETIX_MAIL_SSL: 'off'
+      PRETIX_MAIL_TLS: 'off'
+      BOOTSTRAP_MODE: 'true'
+  mailpit:
+    image: axllent/mailpit:v1.31.6@sha256:23fe39e81bde596a918000b3135c0f85dc8bb4c9ea6be274b051143f3e300387
+    ports:
+    - 127.0.0.1:8030:8025
+    restart: unless-stopped
