@@ -64,6 +64,20 @@ Healthcheck del servicio `app`: el compose declara un `healthcheck` que hace `GE
 
 `scripts/coolify-check.sh` automatiza la validación del contrato (sin secrets ni redes): ejecutar `bash scripts/coolify-check.sh` para validar el contrato (requiere `docker compose` y `jq`).
 
+#### Administrador inicial
+
+`ops/validate.py` aborta el arranque de `app` y `periodic` mientras no exista un usuario staff activo. Hay que crearlo **antes del primer arranque de `app`** usando el servicio `migrate`, que no monta `start.sh` ni exige SMTP. Por ejemplo, sobre el recurso de Coolify o vía CLI:
+
+```sh
+docker compose run --rm migrate createsuperuser
+```
+
+Alternativamente, abrir la Terminal de Coolify sobre el servicio `migrate` y ejecutar `createsuperuser` ahí. La contraseña se introduce interactivamente y no queda en el historial.
+
+#### Requisitos del rol en Postgres
+
+`ops/preflight.sql:6` exige que el rol conectado se llame exactamente `pretix_app`; cualquier otro nombre rompe el preflight antes de migrar. Ademas, `:17` rechaza roles con `rolinherit`, por lo que el rol **debe crearse `NOINHERIT`**. Si se usa el formato `mvp_<slug>`, ese rol debe ser el dueño de la base (crearla como `pretix_app` o cambiar la propiedad antes del primer arranque). La alternativa es parametrizar `ops/preflight.sql` con `current_user` y `-v db_user`, decisión del operador.
+
 ## Datos y tareas
 /data contiene medios, tickets generados y otros archivos; UID15371, con lectura necesaria para nginx nativo. No se fuerza no-new-privileges: la imagen oficial usa sudo para iniciar supervisor, por lo que bloquearlo rompería el arranque. Las credenciales del sistema/proveedores se pasan por entorno y no están escritas en pretix.cfg; administradores de Docker pueden leer el entorno.
 
