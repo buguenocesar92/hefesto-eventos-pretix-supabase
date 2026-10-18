@@ -60,7 +60,7 @@ Variables nuevas (con su valor por defecto en compose.yaml):
 - `DB_ALLOW_INTERNAL_HOST` (opcional): aceptar hosts internos (no `*.supabase.co`) en validaciones. Necesario cuando `DB_SSLMODE=disable` y el host no es Supabase.
 - `SMTP_READY=false`: arranque sin SMTP real. El correo queda desactivado (`null`) hasta que el operador confirme entrega y vuelva a poner `SMTP_READY=true`.
 
-Healthcheck del servicio `app`: ya queda cubierto por el `start.sh` del standalone (comprueba el proceso); no requiere intervención.
+Healthcheck del servicio `app`: el compose declara un `healthcheck` que hace `GET http://localhost/healthcheck/` con `python3 -c` (no usa credenciales), con `interval: 30s`, `timeout: 10s`, `retries: 5` y `start_period: 120s`. Coolify lo refleja como estado del contenedor sin intervención del operador.
 
 `scripts/coolify-check.sh` automatiza la validación del contrato (sin secrets ni redes) y se ejecuta en CI antes de mergear a `main`.
 
