@@ -49,6 +49,8 @@ Asignar dominio HTTPS únicamente al servicio **app**, puerto **80**. No publica
 
 No usar el override bootstrap en público ni exponer Mailpit. Si se cambia de Compose manual a Coolify, los volúmenes pueden tener otros nombres: hacer respaldo/restauración y confirmar el volumen administrado por Coolify; no asumir que encontrará el del proyecto manual.
 
+En una instalación manual previa, el `compose.yaml` ya no declara un `name:` de proyecto. Para conservar los volúmenes `files` y `redis_data` originales hay que fijar `COMPOSE_PROJECT_NAME=hefesto-eventos` en `.env` antes del primer `docker compose up` en Coolify; sin esa variable Docker deriva el nombre del directorio y los datos quedarían vacíos.
+
 En una instalación manual, para retirar el bootstrap detener con ambos archivos y recrear solo con compose.yaml, comprobando que desaparezcan los puertos de prueba. Cambiar YAML no actualiza un contenedor ya creado.
 
 ### Despliegue en Coolify (MVP Hefesto)
