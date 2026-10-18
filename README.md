@@ -62,7 +62,7 @@ Variables nuevas (con su valor por defecto en compose.yaml):
 
 Healthcheck del servicio `app`: el compose declara un `healthcheck` que hace `GET http://localhost/healthcheck/` con `python3 -c` (no usa credenciales), con `interval: 30s`, `timeout: 10s`, `retries: 5` y `start_period: 120s`. Coolify lo refleja como estado del contenedor sin intervención del operador.
 
-`scripts/coolify-check.sh` automatiza la validación del contrato (sin secrets ni redes) y se ejecuta en CI antes de mergear a `main`.
+`scripts/coolify-check.sh` automatiza la validación del contrato (sin secrets ni redes): ejecutar `bash scripts/coolify-check.sh` para validar el contrato (requiere `docker compose` y `jq`).
 
 ## Datos y tareas
 /data contiene medios, tickets generados y otros archivos; UID15371, con lectura necesaria para nginx nativo. No se fuerza no-new-privileges: la imagen oficial usa sudo para iniciar supervisor, por lo que bloquearlo rompería el arranque. Las credenciales del sistema/proveedores se pasan por entorno y no están escritas en pretix.cfg; administradores de Docker pueden leer el entorno.
