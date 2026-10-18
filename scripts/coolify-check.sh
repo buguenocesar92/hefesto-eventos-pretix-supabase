@@ -123,17 +123,12 @@ check_no_profile_violations() {
     return "$failures"
 }
 
-# Para supabase-pg: el render debe contener mvp_prueba y disable.
+# Para supabase-pg: el DSN debe llegar al servicio web como PRETIX_DATABASE_NAME
+# y PRETIX_DATABASE_SSLMODE. Se valida con jq sobre services.app.environment.
 check_supabase_pg_values() {
     local rendered="$1" failures=0
-    local content
-    content="$(cat "$rendered")"
-    if ! grep -q "mvp_prueba" <<< "$content"; then
-        echo "FAIL: supabase-pg: mvp_prueba no aparece en el render"
-        failures=$((failures + 1))
-    fi
-    if ! grep -q "disable" <<< "$content"; then
-        echo "FAIL: supabase-pg: disable no aparece en el render"
+    if ! jq -e '.services.app.environment.PRETIX_DATABASE_NAME=="mvp_prueba" and .services.app.environment.PRETIX_DATABASE_SSLMODE=="disable"' "$rendered" > /dev/null 2>&1; then
+        echo "FAIL: app: DB_NAME/DB_SSLMODE no llegan al servicio web"
         failures=$((failures + 1))
     fi
     return "$failures"
