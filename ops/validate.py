@@ -10,12 +10,19 @@ if local:
 elif u.scheme!='https' or not u.hostname:invalid('HTTPS requerido')
 for key in ['PRETIX_DATABASE_PASSWORD','PRETIX_DJANGO_SECRET']:
     if not re.fullmatch('[a-f0-9]{64}',e.get(key,'')):invalid('Configurar secreto '+key)
-if not Path('/certs/ca.crt').is_file():invalid('Falta CA DB')
+sslmode=e.get('PRETIX_DATABASE_SSLMODE','verify-full')
+if sslmode=='verify-full' and not Path('/certs/ca.crt').is_file():invalid('Falta CA DB')
 if not local:
-    if e.get('SMTP_READY')!='true':invalid('Probar SMTP y confirmar SMTP_READY')
-    for key in ['PRETIX_MAIL_HOST','PRETIX_MAIL_USER','PRETIX_MAIL_PASSWORD']:
-        if not e.get(key) or e[key]=='REEMPLAZAR':invalid('Completar SMTP')
-    if e.get('PRETIX_MAIL_PORT')!='465' or e.get('PRETIX_MAIL_SSL')!='on' or e.get('PRETIX_MAIL_TLS')!='off':invalid('SMTP465 TLS implicito requerido')
+    smtp_ready=e.get('SMTP_READY')=='true'
+    if smtp_ready:
+        for key in ['PRETIX_MAIL_HOST','PRETIX_MAIL_USER','PRETIX_MAIL_PASSWORD']:
+            if not e.get(key) or e[key]=='REEMPLAZAR':invalid('Completar SMTP')
+        if e.get('PRETIX_MAIL_PORT')!='465' or e.get('PRETIX_MAIL_SSL')!='on' or e.get('PRETIX_MAIL_TLS')!='off':invalid('SMTP465 TLS implicito requerido')
+    else:
+        # Correo desactivado: el kit arranca aunque SMTP_READY sea false.
+        for key in ['PRETIX_MAIL_HOST','PRETIX_MAIL_USER','PRETIX_MAIL_PASSWORD','PRETIX_MAIL_PORT','PRETIX_MAIL_SSL','PRETIX_MAIL_TLS']:
+            os.environ.pop(key,None)
+        os.environ['PRETIX_MAIL_BACKEND']='null'
     sys.path.insert(0,'/pretix/src');os.environ['DJANGO_SETTINGS_MODULE']='production_settings'
     import django
     django.setup()

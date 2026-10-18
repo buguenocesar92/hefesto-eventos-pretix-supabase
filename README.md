@@ -51,6 +51,19 @@ No usar el override bootstrap en público ni exponer Mailpit. Si se cambia de Co
 
 En una instalación manual, para retirar el bootstrap detener con ambos archivos y recrear solo con compose.yaml, comprobando que desaparezcan los puertos de prueba. Cambiar YAML no actualiza un contenedor ya creado.
 
+### Despliegue en Coolify (MVP Hefesto)
+
+Variables nuevas (con su valor por defecto en compose.yaml):
+
+- `DB_NAME`: nombre de la base en el Postgres compartido. Por defecto `postgres`. Cuando cada app usa su propia base en un Supabase compartido (formato `mvp_<slug>`), establecer esta variable.
+- `DB_SSLMODE`: modo SSL del driver. Por defecto `verify-full`. Si el Postgres compartido está en una red interna sin CA, usar `disable` o `require` según el caso. Con `DB_SSLMODE` distinto de `verify-full`, el directorio `certs/ca.crt` no es obligatorio y los chequeos de `ops/preflight.sh`/`ops/validate.py` lo omiten.
+- `DB_ALLOW_INTERNAL_HOST` (opcional): aceptar hosts internos (no `*.supabase.co`) en validaciones. Necesario cuando `DB_SSLMODE=disable` y el host no es Supabase.
+- `SMTP_READY=false`: arranque sin SMTP real. El correo queda desactivado (`null`) hasta que el operador confirme entrega y vuelva a poner `SMTP_READY=true`.
+
+Healthcheck del servicio `app`: ya queda cubierto por el `start.sh` del standalone (comprueba el proceso); no requiere intervención.
+
+`scripts/coolify-check.sh` automatiza la validación del contrato (sin secrets ni redes) y se ejecuta en CI antes de mergear a `main`.
+
 ## Datos y tareas
 /data contiene medios, tickets generados y otros archivos; UID15371, con lectura necesaria para nginx nativo. No se fuerza no-new-privileges: la imagen oficial usa sudo para iniciar supervisor, por lo que bloquearlo rompería el arranque. Las credenciales del sistema/proveedores se pasan por entorno y no están escritas en pretix.cfg; administradores de Docker pueden leer el entorno.
 

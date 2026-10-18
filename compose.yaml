@@ -1,4 +1,3 @@
-name: ${COMPOSE_PROJECT_NAME:-hefesto-eventos}
 services:
   preflight:
     image: postgres:17-alpine@sha256:b0f9560a2de083e2cc7382e75f808c7381a32852a7ec49117deedb300e552b24
@@ -9,10 +8,10 @@ services:
     environment:
       PGHOST: ${DB_HOST:?Configurar DB_HOST}
       PGPORT: '5432'
-      PGDATABASE: postgres
+      PGDATABASE: ${DB_NAME:-postgres}
       PGUSER: ${DB_USER:-pretix_app}
       PGPASSWORD: ${DB_PASSWORD:?Configurar clave DB}
-      PGSSLMODE: verify-full
+      PGSSLMODE: ${DB_SSLMODE:-verify-full}
       PGSSLROOTCERT: /certs/ca.crt
       PGCONNECT_TIMEOUT: '15'
       SUPABASE_DEDICATED_CONFIRMED: ${SUPABASE_DEDICATED_CONFIRMED:-false}
@@ -63,8 +62,10 @@ services:
       PRETIX_PRETIX_URL: ${PUBLIC_URL:?Configurar URL HTTPS}
       PRETIX_DJANGO_SECRET: ${DJANGO_SECRET:?Configurar secreto}
       PRETIX_DATABASE_HOST: ${DB_HOST}
+      PRETIX_DATABASE_NAME: ${DB_NAME:-postgres}
       PRETIX_DATABASE_USER: ${DB_USER:-pretix_app}
       PRETIX_DATABASE_PASSWORD: ${DB_PASSWORD}
+      PRETIX_DATABASE_SSLMODE: ${DB_SSLMODE:-verify-full}
       PRETIX_MAIL_FROM: ${MAIL_FROM:-eventos@hefesto-studio.cl}
       PRETIX_MAIL_HOST: ${SMTP_HOST:-REEMPLAZAR}
       PRETIX_MAIL_USER: ${SMTP_USER:-REEMPLAZAR}
@@ -105,8 +106,10 @@ services:
       PRETIX_PRETIX_URL: ${PUBLIC_URL:?Configurar URL HTTPS}
       PRETIX_DJANGO_SECRET: ${DJANGO_SECRET:?Configurar secreto}
       PRETIX_DATABASE_HOST: ${DB_HOST}
+      PRETIX_DATABASE_NAME: ${DB_NAME:-postgres}
       PRETIX_DATABASE_USER: ${DB_USER:-pretix_app}
       PRETIX_DATABASE_PASSWORD: ${DB_PASSWORD}
+      PRETIX_DATABASE_SSLMODE: ${DB_SSLMODE:-verify-full}
       PRETIX_MAIL_FROM: ${MAIL_FROM:-eventos@hefesto-studio.cl}
       PRETIX_MAIL_HOST: ${SMTP_HOST:-REEMPLAZAR}
       PRETIX_MAIL_USER: ${SMTP_USER:-REEMPLAZAR}
@@ -146,8 +149,10 @@ services:
       PRETIX_PRETIX_URL: ${PUBLIC_URL:?Configurar URL HTTPS}
       PRETIX_DJANGO_SECRET: ${DJANGO_SECRET:?Configurar secreto}
       PRETIX_DATABASE_HOST: ${DB_HOST}
+      PRETIX_DATABASE_NAME: ${DB_NAME:-postgres}
       PRETIX_DATABASE_USER: ${DB_USER:-pretix_app}
       PRETIX_DATABASE_PASSWORD: ${DB_PASSWORD}
+      PRETIX_DATABASE_SSLMODE: ${DB_SSLMODE:-verify-full}
       PRETIX_MAIL_FROM: ${MAIL_FROM:-eventos@hefesto-studio.cl}
       PRETIX_MAIL_HOST: ${SMTP_HOST:-REEMPLAZAR}
       PRETIX_MAIL_USER: ${SMTP_USER:-REEMPLAZAR}
@@ -176,10 +181,10 @@ services:
     environment:
       PGHOST: ${DB_HOST:?Configurar DB_HOST}
       PGPORT: '5432'
-      PGDATABASE: postgres
+      PGDATABASE: ${DB_NAME:-postgres}
       PGUSER: ${DB_USER:-pretix_app}
       PGPASSWORD: ${DB_PASSWORD:?Configurar clave DB}
-      PGSSLMODE: verify-full
+      PGSSLMODE: ${DB_SSLMODE:-verify-full}
       PGSSLROOTCERT: /certs/ca.crt
       PGCONNECT_TIMEOUT: '15'
     volumes:
