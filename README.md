@@ -57,8 +57,8 @@ Variables nuevas (con su valor por defecto en compose.yaml):
 
 - `DB_NAME`: nombre de la base en el Postgres compartido. Por defecto `postgres`. Cuando cada app usa su propia base en un Supabase compartido (formato `mvp_<slug>`), establecer esta variable.
 - `DB_SSLMODE`: modo SSL del driver. Por defecto `verify-full`. Si el Postgres compartido está en una red interna sin CA, usar `disable` o `require` según el caso. Con `DB_SSLMODE` distinto de `verify-full`, el directorio `certs/ca.crt` no es obligatorio y los chequeos de `ops/preflight.sh`/`ops/validate.py` lo omiten.
-- `DB_ALLOW_INTERNAL_HOST` (opcional): aceptar hosts internos (no `*.supabase.co`) en validaciones. Necesario cuando `DB_SSLMODE=disable` y el host no es Supabase.
-- `SMTP_READY=false`: arranque sin SMTP real. El correo queda desactivado (`null`) hasta que el operador confirme entrega y vuelva a poner `SMTP_READY=true`.
+- **Sin chequeo de host:** el kit no verifica que `DB_HOST` pertenezca a `*.supabase.co`. Con `DB_SSLMODE=disable` cualquier host interno sirve; el operador es responsable de que la red esté aislada.
+- `SMTP_READY=false`: arranque sin SMTP real. El correo queda desactivado (backend dummy de Django) hasta que el operador confirme entrega y vuelva a poner `SMTP_READY=true`.
 
 Healthcheck del servicio `app`: el compose declara un `healthcheck` que hace `GET http://localhost/healthcheck/` con `python3 -c` (no usa credenciales), con `interval: 30s`, `timeout: 10s`, `retries: 5` y `start_period: 120s`. Coolify lo refleja como estado del contenedor sin intervención del operador.
 
