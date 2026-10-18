@@ -11,7 +11,7 @@ elif u.scheme!='https' or not u.hostname:invalid('HTTPS requerido')
 for key in ['PRETIX_DATABASE_PASSWORD','PRETIX_DJANGO_SECRET']:
     if not re.fullmatch('[a-f0-9]{64}',e.get(key,'')):invalid('Configurar secreto '+key)
 sslmode=e.get('PRETIX_DATABASE_SSLMODE','verify-full')
-if sslmode=='verify-full' and not Path('/certs/ca.crt').is_file():invalid('Falta CA DB')
+if sslmode in ('verify-full','verify-ca') and not Path('/certs/ca.crt').is_file():invalid('Falta CA DB')
 if not local:
     smtp_ready=e.get('SMTP_READY')=='true'
     if smtp_ready:
