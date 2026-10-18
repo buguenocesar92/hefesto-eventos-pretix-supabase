@@ -18,8 +18,8 @@ if not local:
         for key in ['PRETIX_MAIL_HOST','PRETIX_MAIL_USER','PRETIX_MAIL_PASSWORD']:
             if not e.get(key) or e[key]=='REEMPLAZAR':invalid('Completar SMTP')
         if e.get('PRETIX_MAIL_PORT')!='465' or e.get('PRETIX_MAIL_SSL')!='on' or e.get('PRETIX_MAIL_TLS')!='off':invalid('SMTP465 TLS implicito requerido')
-    # Si SMTP_READY=false, no se valida SMTP. La desactivacion del backend de
-    # correo la hacen ops/start.sh y ops/periodic.sh antes del exec/bucle.
+    # Si SMTP_READY=false, no se valida SMTP. El correo queda en el backend dummy
+    # de Django via ops/production_settings.py (montado en app y periodic).
     sys.path.insert(0,'/pretix/src');os.environ['DJANGO_SETTINGS_MODULE']='production_settings'
     import django
     django.setup()

@@ -60,7 +60,7 @@ Variables nuevas (con su valor por defecto en compose.yaml):
 - `DB_NAME`: nombre de la base en el Postgres compartido. Por defecto `postgres`. Cuando cada app usa su propia base en un Supabase compartido (formato `mvp_<slug>`), establecer esta variable.
 - `DB_SSLMODE`: modo SSL del driver. Por defecto `verify-full`. Si el Postgres compartido está en una red interna sin CA, usar `disable` o `require` según el caso. Con `DB_SSLMODE` distinto de `verify-full`, el directorio `certs/ca.crt` no es obligatorio y los chequeos de `ops/preflight.sh`/`ops/validate.py` lo omiten.
 - **Sin chequeo de host:** el kit no verifica que `DB_HOST` pertenezca a `*.supabase.co`. Con `DB_SSLMODE=disable` cualquier host interno sirve; el operador es responsable de que la red esté aislada.
-- `SMTP_READY=false`: arranque sin SMTP real. El correo queda desactivado (backend dummy de Django) hasta que el operador confirme entrega y vuelva a poner `SMTP_READY=true`.
+- `SMTP_READY=false`: arranque sin SMTP real. `compose.yaml` monta `ops/production_settings.py` (copia del de la imagen más un bloque final) en `app` y `periodic`, que fija `EMAIL_BACKEND` al backend dummy de Django: no se intenta ningún envío. Con `SMTP_READY=true` se usa el backend original de pretix. Lo comprueba `bats tests/test_punto1_smtp.bats` (requiere docker).
 
 Healthcheck del servicio `app`: el compose declara un `healthcheck` que hace `GET http://localhost/healthcheck/` con `python3 -c` (no usa credenciales), con `interval: 30s`, `timeout: 10s`, `retries: 5` y `start_period: 120s`. Coolify lo refleja como estado del contenedor sin intervención del operador.
 

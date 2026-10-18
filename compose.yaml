@@ -124,6 +124,7 @@ services:
     - files:/data
     - ./ops:/opt/hefesto:ro
     - ./ops/pretix.cfg:/etc/pretix/pretix.cfg:ro
+    - ./ops/production_settings.py:/pretix/src/production_settings.py:ro
     - ./certs:/certs:ro
     - ./ops/pretixtask.conf:/etc/supervisord/pretixtask.conf:ro
     networks:
@@ -173,6 +174,7 @@ services:
     - files:/data
     - ./ops:/opt/hefesto:ro
     - ./ops/pretix.cfg:/etc/pretix/pretix.cfg:ro
+    - ./ops/production_settings.py:/pretix/src/production_settings.py:ro
     - ./certs:/certs:ro
     networks:
     - default
