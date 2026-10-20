@@ -49,7 +49,36 @@ Asignar dominio HTTPS únicamente al servicio **app**, puerto **80**. No publica
 
 No usar el override bootstrap en público ni exponer Mailpit. Si se cambia de Compose manual a Coolify, los volúmenes pueden tener otros nombres: hacer respaldo/restauración y confirmar el volumen administrado por Coolify; no asumir que encontrará el del proyecto manual.
 
+En una instalación manual previa, el `compose.yaml` ya no declara un `name:` de proyecto. Para conservar los volúmenes `files` y `redis_data` originales hay que fijar `COMPOSE_PROJECT_NAME=hefesto-eventos` en `.env` antes del primer `docker compose up` en Coolify; sin esa variable Docker deriva el nombre del directorio y los datos quedarían vacíos.
+
 En una instalación manual, para retirar el bootstrap detener con ambos archivos y recrear solo con compose.yaml, comprobando que desaparezcan los puertos de prueba. Cambiar YAML no actualiza un contenedor ya creado.
+
+### Despliegue en Coolify (MVP Hefesto)
+
+Variables nuevas (con su valor por defecto en compose.yaml):
+
+- `DB_NAME`: nombre de la base en el Postgres compartido. Por defecto `postgres`. Cuando cada app usa su propia base en un Supabase compartido (formato `mvp_<slug>`), establecer esta variable.
+- `DB_SSLMODE`: modo SSL del driver. Por defecto `verify-full`. Si el Postgres compartido está en una red interna sin CA, usar `disable` o `require` según el caso. Con `DB_SSLMODE` distinto de `verify-full`, el directorio `certs/ca.crt` no es obligatorio y los chequeos de `ops/preflight.sh`/`ops/validate.py` lo omiten.
+- **Sin chequeo de host:** el kit no verifica que `DB_HOST` pertenezca a `*.supabase.co`. Con `DB_SSLMODE=disable` cualquier host interno sirve; el operador es responsable de que la red esté aislada.
+- `SMTP_READY=false`: arranque sin SMTP real. `compose.yaml` monta `ops/production_settings.py` (copia del de la imagen más un bloque final) en `app` y `periodic`, que fija `EMAIL_BACKEND` al backend dummy de Django: no se intenta ningún envío. Con `SMTP_READY=true` se usa el backend original de pretix. Lo comprueba `bats tests/test_punto1_smtp.bats` (requiere docker).
+
+Healthcheck del servicio `app`: el compose declara un `healthcheck` que hace `GET http://localhost/healthcheck/` con `python3 -c` (no usa credenciales), con `interval: 30s`, `timeout: 10s`, `retries: 5` y `start_period: 120s`. Coolify lo refleja como estado del contenedor sin intervención del operador.
+
+`scripts/coolify-check.sh` automatiza la validación del contrato (sin secrets ni redes): ejecutar `bash scripts/coolify-check.sh` para validar el contrato (requiere `docker compose` y `jq`).
+
+#### Administrador inicial
+
+`ops/validate.py` aborta el arranque de `app` y `periodic` mientras no exista un usuario staff activo. Hay que crearlo **antes del primer arranque de `app`** usando el servicio `migrate`, que no monta `start.sh` ni exige SMTP. Por ejemplo, sobre el recurso de Coolify o vía CLI:
+
+```sh
+docker compose run --rm migrate createsuperuser
+```
+
+Alternativamente, abrir la Terminal de Coolify sobre el servicio `migrate` y ejecutar `createsuperuser` ahí. La contraseña se introduce interactivamente y no queda en el historial.
+
+#### Requisitos del rol en Postgres
+
+`ops/preflight.sql:6` exige que el rol conectado se llame exactamente `pretix_app`; cualquier otro nombre rompe el preflight antes de migrar. Ademas, `:17` rechaza roles con `rolinherit`, por lo que el rol **debe crearse `NOINHERIT`**. Si se usa el formato `mvp_<slug>`, ese rol debe ser el dueño de la base (crearla como `pretix_app` o cambiar la propiedad antes del primer arranque). La alternativa es parametrizar `ops/preflight.sql` con `current_user` y `-v db_user`, decisión del operador.
 
 ## Datos y tareas
 /data contiene medios, tickets generados y otros archivos; UID15371, con lectura necesaria para nginx nativo. No se fuerza no-new-privileges: la imagen oficial usa sudo para iniciar supervisor, por lo que bloquearlo rompería el arranque. Las credenciales del sistema/proveedores se pasan por entorno y no están escritas en pretix.cfg; administradores de Docker pueden leer el entorno.
